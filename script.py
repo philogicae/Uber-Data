@@ -10,6 +10,9 @@ import plotly.graph_objects as go
 import networkx as nx
 import osmnx as ox
 from currency_converter import CurrencyConverter
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error
 
 load_dotenv()
 mypath = getenv("PATH_FOLDER")
@@ -51,8 +54,7 @@ eats_app_analytics_df = pd.read_csv(join(
     eats, 'eats_app_analytics-0.csv'))
 ''' print(eats_app_analytics_df.head()) '''
 
-''' px.set_mapbox_access_token(mapbox_token)
-fig = px.scatter_mapbox(eats_app_analytics_df, lat="Latitude", lon="Longitude", color="Analytics Event Type",
+''' fig = px.scatter_mapbox(eats_app_analytics_df, lat="Latitude", lon="Longitude", color="Analytics Event Type",
                         color_continuous_scale=px.colors.cyclical.IceFire, size_max=15, zoom=10)
 fig.show() '''
 
@@ -79,11 +81,11 @@ def convert(row):
 
 
 eats_order_details_df = eats_order_details_df.apply(convert, axis=1)
-''' print("Total:", eats_order_details_df.drop_duplicates(
+print("Total Uber eats:", eats_order_details_df.drop_duplicates(
     subset='Order ID').order_price_euro.sum(), "EUR")
 print("Prix moyen:", eats_order_details_df.drop_duplicates(
     subset='Order ID').order_price_euro.mean(), "EUR")
-fig = px.histogram(eats_order_details_df.drop_duplicates(
+''' fig = px.histogram(eats_order_details_df.drop_duplicates(
     subset='Order ID').order_price_euro)
 fig.show() '''
 cum_sum_eats = eats_order_details_df.drop_duplicates(
@@ -91,8 +93,7 @@ cum_sum_eats = eats_order_details_df.drop_duplicates(
 cum_sum_eats = cum_sum_eats.groupby(pd.Grouper(freq="M")).sum()
 cum_sum_eats['cum_sum'] = cum_sum_eats['order_price_euro'].cumsum()
 ''' fig = px.line(cum_sum_eats, x=cum_sum_eats.index, y='cum_sum')
-fig.show()
-print(cum_sum_eats) '''
+fig.show() '''
 
 # Rider
 rider = mypath + "/Rider"
@@ -144,9 +145,7 @@ fig.add_trace(go.Scatter(x=combinate.index,
               y=combinate['cum_sum_rides'], mode='lines', name='rides'))
 fig.add_trace(go.Scatter(x=combinate.index,
               y=combinate['total_cum_sum'], mode='lines', name='total'))
-
 fig.show()
-px.set_mapbox_access_token(mapbox_token)
 fig = px.scatter_mapbox(trips_data_df, lat="Begin Trip Lat", lon="Begin Trip Lng", color="Distance (miles)",
                         size='fare_amount_euro', color_continuous_scale=px.colors.cyclical.IceFire, size_max=15, zoom=10)
 fig.show() '''
@@ -168,14 +167,58 @@ trips_data_df['Begin Trip Time'] = pd.to_datetime(
     trips_data_df['Begin Trip Time'], format='%Y-%m-%d %H:%M:%S %z %Z')
 trips_data_df['begin_trip_hour'] = trips_data_df['Begin Trip Time'].dt.hour
 trips_data_df['begin_weekday'] = trips_data_df['Begin Trip Time'].dt.weekday
-trip_uberx_paris = trips_data_df[(trips_data_df['Product Type'].isin(
-    ['UberX', 'uberX', 'Comfort', 'Star', 'UberPOP', 'uberPOOL UFP'])) & (trips_data_df['City'] == 603)]
-trip_uberx_paris = trip_uberx_paris[[
-    'begin_trip_hour', 'begin_weekday', "Distance (miles)", "duration", "fare_amount_euro"]]
-''' print(trip_uberx_paris)
-fig = px.scatter(trip_uberx_paris, x="Distance (miles)", y="fare_amount_euro", color="begin_weekday",
+trip_uberx = trips_data_df[(trips_data_df['Product Type'].isin(
+    ['UberX', 'uberX', 'Comfort', 'Star', 'UberPOP', 'uberPOOL UFP']))]
+trip_uberx = trip_uberx[[
+    'begin_trip_hour', 'begin_weekday', "Distance (miles)", "fare_amount_euro"]]
+''' print(trip_uberx)
+fig = px.scatter(trip_uberx, x="Distance (miles)", y="fare_amount_euro", color="begin_weekday",
                  size='begin_trip_hour')
 fig.show()
-fig = px.scatter(trip_uberx_paris, x="Distance (miles)",
+fig = px.scatter(trip_uberx, x="Distance (miles)",
                  y="fare_amount_euro", trendline="ols")
 fig.show() '''
+
+X_train, X_test, y_train, y_test = train_test_split(trip_uberx.drop('fare_amount_euro', axis=1),
+                                                    trip_uberx['fare_amount_euro'], test_size=0.30,
+                                                    random_state=101)
+''' fig = px.histogram(y_train)
+fig.show()
+ '''
+reg = LinearRegression()
+reg .fit(X_train, y_train)
+y_pred = reg.predict(X_test)
+''' print(mean_absolute_error(y_test, y_pred))
+print(X_test.head()) '''
+
+to_pred = pd.DataFrame(
+    columns=['begin_trip_hour', 'begin_weekday', 'Distance (miles)'])
+values = ['18', '4', '5']
+to_pred.loc[0] = values
+pred = reg.predict(to_pred)
+''' print(
+    f'Le prix pour un UberX pour un trajet de {values[2]}miles, à {values[0]}h le {int(values[1])+1}ème jour de la semaine est de : {pred[0].round(1)}€') '''
+
+rider_app_analytics_df = pd.read_csv(join(rider, 'rider_app_analytics-0.csv'))
+''' fig = px.scatter_mapbox(rider_app_analytics_df, lat="Latitude", lon="Longitude",
+                        color="Analytics Event Type", color_continuous_scale=px.colors.cyclical.IceFire, size_max=15, zoom=10)
+fig.show() '''
+
+print("Total Uber ride:", trips_data_df['fare_amount_euro'].sum(), "EUR")
+print("Prix moyen:", trips_data_df['fare_amount_euro'].mean(), "EUR")
+
+print("Total Uber:", eats_order_details_df.drop_duplicates(
+    subset='Order ID').order_price_euro.sum() + trips_data_df['fare_amount_euro'].sum(), "EUR")
+
+
+def create_graph(loc, dist, transport_mode, loc_type="address"):
+    """Transport mode = ‘walk’, ‘bike’, ‘drive’, ‘drive_service’, ‘all’, ‘all_private’, ‘none’"""
+    if loc_type == "address":
+        G = ox.graph_from_address(loc, dist=dist, network_type=transport_mode)
+    elif loc_type == "points":
+        G = ox.graph_from_point(loc, dist=dist, network_type=transport_mode)
+    return G
+
+
+''' G = create_graph("Bucuresti", 10000, "drive")
+ox.plot_graph(G) '''

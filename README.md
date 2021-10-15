@@ -12,6 +12,11 @@ Get your Mapbox token here: https://account.mapbox.com/access-tokens <br />
 
 ## Installation
 
+```bash
+For Windows: ./install.bat
+For Linux: ./install.sh
+```
+
 Create a .env file with:
 
 ```python
@@ -22,5 +27,5 @@ MAPBOX_TOKEN = 'your_mapbox_token'
 ## Usage
 
 ```bash
-./launch.sh
+python script.py
 ```
