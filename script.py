@@ -1,3 +1,4 @@
+import random
 from dotenv import load_dotenv
 from os import getenv, listdir
 from os.path import isfile, join
@@ -5,6 +6,7 @@ from datetime import datetime
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point, LineString
+import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 import networkx as nx
@@ -220,5 +222,35 @@ def create_graph(loc, dist, transport_mode, loc_type="address"):
     return G
 
 
+# Map route
 ''' G = create_graph("Bucuresti", 10000, "drive")
 ox.plot_graph(G) '''
+
+''' print(trips_data_df['City'].value_counts()) '''
+
+trips_paris_df = trips_data_df[trips_data_df['City'] == 603]
+lat_begin = trips_paris_df['Begin Trip Lat'].tolist()
+lon_begin = trips_paris_df['Begin Trip Lng'].tolist()
+lon_end = trips_paris_df['Dropoff Lng'].tolist()
+lat_end = trips_paris_df['Dropoff Lat'].tolist()
+
+''' G = create_graph("Bucuresti", 10000, "drive")
+G = ox.add_edge_speeds(G)
+G = ox.add_edge_travel_times(G)
+
+routes_list = []
+for lat_begin_, lon_begin_, lon_end_, lat_end_ in zip(lat_begin, lon_begin, lon_end, lat_end):
+    start_node = ox.distance.nearest_nodes(G, lon_begin_, lat_begin_)
+    end_node = ox.distance.nearest_nodes(G, lon_end_, lat_end_)
+    try:
+        route = nx.shortest_path(G, start_node, end_node, weight='travel_time')
+        routes_list.append(route)
+    except nx.exception.NetworkXNoPath:
+        pass
+number_of_colors = len(routes_list)
+color = ["#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)])
+             for i in range(number_of_colors)]
+['#D11B82', '#A820E6', '#8FC3AB', '#CE0BAB', '#983DE4', '#F2966F', '#2611F4', '#9C67DB', '#D4F84E', '#328D43', '#AAA725', '#79FF8A', '#B5F431', '#C794F5', '#DA426E', '#CB35E5', '#2900BF', '#3D9201', '#443F9C', '#89C4A4', '#ABC240', '#49EDF4', '#0687D1', '#F5789D', '#CB1ACC', '#2A3705', '#39A287', '#6F6BC6', '#A121B2', '#7A688A', '#9A96FB', '#239CDC', '#102BDA', '#5E1A94', '#07488F', '#7B7BAA', '#DFF2E9', '#6E643E', '#CC234B', '#B53E76', '#216FF4', '#197F19', '#E70050', '#910D96', '#847462', '#5E3B06', '#13F9CD', '#E554B0', '#B8265D',
+    '#CBDA27', '#02F102', '#648A0D', '#C74998', '#AA8742', '#7BFB14', '#BF2CCC', '#9A28DF', '#AB16A9', '#858598', '#2713CA', '#AF12F0', '#BA0B7E', '#5FAB1E', '#85ABB9', '#89F000', '#D6FB51', '#3016F2', '#DF6F96', '#83B7D9', '#786555', '#63FD64', '#2FC8BF', '#E67609', '#00AF41', '#8A869C', '#72DCA9', '#0438D2', '#151317', '#FE7443', '#6FD56F', '#72B2C7', '#A72676', '#4DE283', '#C19C31', '#4E6EFA', '#65B313', '#2640C1', '#9BA1F8', '#64409C', '#354C6D', '#98F185', '#6FB097', '#373D9A', '#CEB024', '#38E9BE', '#0D76CA', '#20901B', '#379125']
+ox.plot_graph_routes(G, routes_list, route_colors=color,
+                     route_linewidth=6, node_size=0, bgcolor='k', figsize=(20, 20)) '''

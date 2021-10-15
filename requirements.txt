@@ -1,6 +1,7 @@
 geopandas
 descartes
 osmnx
+matplotlib
 plotly_express
 currencyconverter
 python-dotenv
