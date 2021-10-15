@@ -1,0 +1,6 @@
+geopandas
+descartes
+osmnx
+plotly_express
+currencyconverter
+python-dotenv
